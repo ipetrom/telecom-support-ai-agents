@@ -1,0 +1,7 @@
+{
+  "provider": "openai",
+  "model": "text-embedding-3-small",
+  "normalize": true,
+  "dim_hint": null,
+  "built_at": 1761596039
+}

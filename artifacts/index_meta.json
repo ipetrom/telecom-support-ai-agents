@@ -1,0 +1,38 @@
+[
+  {
+    "doc_id": "01_troubleshooting_internet",
+    "path": "data/docs/01_troubleshooting_internet.md",
+    "title": "Troubleshooting Internet (FTTH/DSL/LTE/5G)",
+    "version": "1.2",
+    "last_updated": "2025-27-10",
+    "num_chunks": 49,
+    "language": "en"
+  },
+  {
+    "doc_id": "02_router_wifi",
+    "path": "data/docs/02_router_wifi.md",
+    "title": "Router Setup & Wi‑Fi Optimization",
+    "version": "1.2",
+    "last_updated": "2025-27-10",
+    "num_chunks": 80,
+    "language": "en"
+  },
+  {
+    "doc_id": "03_apn_bridge",
+    "path": "data/docs/03_apn_bridge.md",
+    "title": "APN Configuration & Bridge Mode (LTE/5G & FTTH)",
+    "version": "1.2",
+    "last_updated": "2025-27-10",
+    "num_chunks": 75,
+    "language": "en"
+  },
+  {
+    "doc_id": "04_known_issues",
+    "path": "data/docs/04_known_issues.md",
+    "title": "Known Issues & Workarounds (FTTH/DSL/LTE/5G)",
+    "version": "1.2",
+    "last_updated": "2025-27-10",
+    "num_chunks": 79,
+    "language": "en"
+  }
+]
