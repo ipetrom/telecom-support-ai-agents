@@ -26,7 +26,6 @@ import yaml
 
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
-from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from dotenv import load_dotenv
@@ -156,7 +155,7 @@ def build_index(docs_dir: Path, artifacts_dir: Path, chunk_size: int, chunk_over
     meta_records: List[Dict] = []
 
     for md_path in sorted(docs_dir.glob("*.md")):
-        fm, content = read_markdown(md_path)
+        fm, content = read_markdown(md_path) # load front matter + content
         doc_id = md_path.stem
         title = fm.get("title", doc_id)
         version = fm.get("version")
