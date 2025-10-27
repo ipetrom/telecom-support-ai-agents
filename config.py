@@ -28,9 +28,13 @@ class Settings(BaseSettings):
     chunk_size: int = 1000
     chunk_overlap: int = 200
     
+    # Mock Data (for development)
+    mock_user_id: str = "user_12345"
+    
     class Config:
         env_file = ".env"
         case_sensitive = False
+        extra = "ignore"  # Ignore extra fields in .env
 
 
 # Singleton instance
