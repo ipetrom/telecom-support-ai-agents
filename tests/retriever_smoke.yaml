@@ -1,0 +1,29 @@
+# Minimal smoke tests for the retriever (English docs)
+
+# Run idea: iterate cases and ensure at least one expected doc/section appears in top-k.
+
+* q: "Fiber internet keeps disconnecting. PON LED is blinking."
+  expect:
+  any_doc_id: ["01_troubleshooting_internet"]
+  must_contain_text: ["PON", "blink"]
+  min_topk_hit: 1
+
+* q: "How do I enable bridge mode on the ONT and use my own router?"
+  expect:
+  any_doc_id: ["03_apn_bridge"]
+  min_topk_hit: 1
+
+* q: "5 GHz Wi‑Fi disappears randomly (maybe DFS radar?)."
+  expect:
+  any_doc_id: ["02_router_wifi", "04_known_issues"]
+  min_topk_hit: 1
+
+* q: "Apps are not reachable from the Internet. Do you support port forwarding under CGNAT?"
+  expect:
+  any_doc_id: ["03_apn_bridge", "04_known_issues"]
+  min_topk_hit: 1
+
+* q: "I get way lower speeds over PPPoE."
+  expect:
+  any_doc_id: ["04_known_issues", "01_troubleshooting_internet"]
+  min_topk_hit: 1

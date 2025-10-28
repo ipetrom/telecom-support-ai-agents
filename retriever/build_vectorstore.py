@@ -268,3 +268,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     build_index(args.docs_dir, args.artifacts_dir, args.chunk_size, args.chunk_overlap)
+
+
+    
