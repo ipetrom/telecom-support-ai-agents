@@ -107,10 +107,21 @@ class BillingAgent:
             # Summarize tool outputs to final user reply
             messages.extend([ai, *tool_messages])
             final = self.llm.invoke(messages)
-            reply_text = final.content if isinstance(final, AIMessage) else str(final)
+            # Extract text from response
+            if hasattr(final, 'content'):
+                reply_text = final.content
+            elif hasattr(final, 'text'):
+                reply_text = final.text
+            else:
+                reply_text = str(final)
         else:
             # No tool calls — direct answer (policy explanation etc.)
-            reply_text = ai.content if isinstance(ai, AIMessage) else str(ai)
+            if hasattr(ai, 'content'):
+                reply_text = ai.content
+            elif hasattr(ai, 'text'):
+                reply_text = ai.text
+            else:
+                reply_text = str(ai)
 
         updates: Dict[str, Any] = {}
         # Heuristic: if we opened a refund case, try to read case_id from tool outputs

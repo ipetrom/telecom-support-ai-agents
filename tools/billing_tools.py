@@ -226,19 +226,39 @@ def as_langchain_tools() -> List:
     if StructuredTool is None:  # pragma: no cover
         return []
 
-    def _tool_get_subscription(inp: SubscriptionIn) -> SubscriptionOut:
-        return get_subscription(inp.user_id)
+    def _tool_get_subscription(**kwargs) -> SubscriptionOut:
+        user_id = kwargs.get('user_id')
+        if not user_id:
+            return SubscriptionOut(
+                user_id="unknown",
+                plan_code="N/A",
+                plan_name="Error: user_id required",
+                price_monthly_pln=0.0,
+                status="error",
+                start_date=date(1970, 1, 1),
+            )
+        return get_subscription(user_id)
 
-    def _tool_open_refund_case(inp: RefundCaseIn) -> RefundCaseOut:
-        return open_refund_case(
-            user_id=inp.user_id,
-            reason=inp.reason,
-            amount_pln=float(inp.amount_pln),
-            invoice_id=inp.invoice_id,
-            description=inp.description,
-        )
+    def _tool_open_refund_case(**kwargs) -> RefundCaseOut:
+        try:
+            return open_refund_case(
+                user_id=kwargs.get('user_id', ''),
+                reason=kwargs.get('reason', RefundReason.OTHER),
+                amount_pln=float(kwargs.get('amount_pln', 0)),
+                invoice_id=kwargs.get('invoice_id', ''),
+                description=kwargs.get('description'),
+            )
+        except Exception as e:
+            case_id = f"R{next(_CASE_COUNTER)}"
+            return RefundCaseOut(
+                case_id=case_id,
+                status="error",
+                next_steps=[f"Error: {str(e)}"],
+                sla_business_days=5,
+                eta_date=_business_eta(5),
+            )
 
-    def _tool_get_refund_policy(_: dict | None = None) -> RefundPolicyOut:
+    def _tool_get_refund_policy(**kwargs) -> RefundPolicyOut:
         return get_refund_policy()
 
     return [
