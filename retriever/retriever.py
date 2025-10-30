@@ -46,11 +46,12 @@ class RetrieverConfig:
     embedding_model: str = os.getenv("EMBEDDING_MODEL", "text-embedding-3-small")
     top_k: int = 8 # final number of docs to return
     fetch_k: int = 24  # for MMR-style diversification - collect this many, then dedup & rerank
-    threshold: float = 0.25  # cosine/IP with normalized embeddings; adjust by stats if present - threshold to decide NO_CONTEXT
+    threshold: float = 0.5  # cosine/IP with normalized embeddings; adjust by stats if present - threshold to decide NO_CONTEXT
     min_hits: int = 3  # require at least this many docs after filtering
-    freshness_boost: float = 0.10  # +10% to result score for newer docs (if last_updated present)
-    step_section_boost: float = 0.08  # +8% if section mentions step/verification (to favor procedural content)
-
+    #freshness_boost: float = 0.10  # +10% to result score for newer docs (if last_updated present)
+    #step_section_boost: float = 0.08  # +8% if section mentions step/verification (to favor procedural content)
+    freshness_boost: float = 0.0  # DISABLED: boosts were inflating scores above 1.0, breaking threshold logic
+    step_section_boost: float = 0.0  # DISABLED: section boost also prevented proper NO_CONTEXT detection
 
 # -----------------------------
 # Utilities
