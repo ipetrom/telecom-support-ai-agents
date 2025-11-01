@@ -48,6 +48,7 @@ class RetrieverConfig:
     fetch_k: int = 24  # for MMR-style diversification - collect this many, then dedup & rerank
     threshold: float = 0.5  # cosine/IP with normalized embeddings; adjust by stats if present - threshold to decide NO_CONTEXT
     min_hits: int = 3  # require at least this many docs after filtering
+    lambda_mult: float = 0.7  # MMR diversity factor (0.0 = pure relevance, 1.0 = pure diversity)
     #freshness_boost: float = 0.10  # +10% to result score for newer docs (if last_updated present)
     #step_section_boost: float = 0.08  # +8% if section mentions step/verification (to favor procedural content)
     freshness_boost: float = 0.0  # DISABLED: boosts were inflating scores above 1.0, breaking threshold logic
@@ -109,18 +110,36 @@ class KBRetriever:
 
     # ---- retrieval ----
     def _mmr_fetch(self, query: str, fetch_k: int) -> List[Tuple[Document, float]]:
-        # LangChain FAISS supports similarity_search_with_score; we implement a simple diversity pass.
-        # 1) fetch many by similarity; 2) greedily add diverse docs by penalizing same section/doc.
-        candidates = self.vs.similarity_search_with_score(query, k=fetch_k)
+        # Use FAISS.max_marginal_relevance_search for MMR-based diversification
+        # while preserving score lookup and dedup logic for downstream pipeline.
+        # 1) Call MMR to get diversified candidates
+        mmr_docs = self.vs.max_marginal_relevance_search(
+            query, 
+            k=fetch_k, 
+            fetch_k=max(fetch_k, self.cfg.fetch_k), 
+            lambda_mult=self.cfg.lambda_mult
+        )
+        # 2) Fetch scores for a wider candidate pool to ensure coverage
+        scored_candidates = self.vs.similarity_search_with_score(
+            query, 
+            k=max(fetch_k, self.cfg.fetch_k)
+        )
+        # 3) Build score map keyed by (doc_id, section_path) for lookup
+        score_map: Dict[str, float] = {}
+        for doc, score in scored_candidates:
+            key = f"{doc.metadata.get('doc_id')}|{'/'.join(doc.metadata.get('section_path', []))}"
+            score_map[key] = float(score)
+        # 4) Compose result: MMR order + scores + dedup by section
         picked: List[Tuple[Document, float]] = []
         seen_keys: set[str] = set()
-        for doc, score in candidates:
+        for doc in mmr_docs:
             key = f"{doc.metadata.get('doc_id')}|{'/'.join(doc.metadata.get('section_path', []))}"
             if key in seen_keys:
-                # keep only the first (best) per section
+                # keep only the first (best) per section (MMR order preserved)
                 continue
             seen_keys.add(key)
-            picked.append((doc, float(score)))
+            score = score_map.get(key, 0.0)
+            picked.append((doc, score))
         return picked
 
     def _apply_boosts(self, query: str, items: List[Tuple[Document, float]]) -> List[Tuple[Document, float]]:
