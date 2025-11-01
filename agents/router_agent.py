@@ -37,8 +37,9 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 @dataclass
 class ConversationState:
+    """Conversation state for routing context."""
     history: List[Dict[str, str]] = field(default_factory=list)
-    last_agent: Optional[str] = None  # 'technical' | 'billing' | 'fallback'
+    last_agent: Optional[str] = None  # 'technical' | 'billing' | 'fallback' — used to bias routing for ambiguous follow-ups
 
 
 # System prompt for intelligent intent classification
@@ -104,8 +105,27 @@ class RouterAgent:
         category = classification.get("category", "unknown")
         confidence = classification.get("confidence", 0.0)
         
-        # Route based on classification
+        # Check conversation context: does history suggest current agent?
+        has_recent_context = self._has_recent_agent_context(state, state.last_agent)
+        
+        # Route based on classification + context
         if confidence >= 0.7 and category in ["technical", "billing"]:
+            # High confidence: clear intent — but check if we're in active conversation
+            if state.last_agent in ["technical", "billing"] and has_recent_context:
+                # User is already in context with this agent; stay unless new topic is clear
+                if category == state.last_agent or category == "unknown":
+                    route = state.last_agent
+                else:
+                    # High confidence for different category: switch agents
+                    route = category
+            else:
+                # Fresh start or no context: route to classified agent
+                route = category
+        elif state.last_agent in ["technical", "billing"] and confidence < 0.7:
+            # Low confidence follow-up: stay with last agent
+            route = state.last_agent
+        elif confidence >= 0.5 and category in ["technical", "billing"]:
+            # Medium confidence: route to classified category
             route = category
         else:
             # Low confidence or unknown intent: send to fallback
@@ -116,6 +136,31 @@ class RouterAgent:
             "confidence": confidence,
             "classification": classification
         }
+
+    def _has_recent_agent_context(self, state: ConversationState, agent: Optional[str]) -> bool:
+        """
+        Check if conversation history suggests we're in active context with an agent.
+        
+        Returns True if:
+        - History is not empty
+        - Last agent messages exist (assistant replies from that agent)
+        - Recent history has multiple turns with the agent
+        
+        Args:
+            state: ConversationState with history
+            agent: Agent name to check ('technical', 'billing', 'fallback')
+            
+        Returns:
+            bool: True if in active conversation context
+        """
+        if not agent or not state.history:
+            return False
+        
+        # Check last 4 messages (2 turns): if recent assistant message exists, we have context
+        recent = state.history[-4:] if len(state.history) >= 2 else state.history
+        has_assistant_msg = any(m.get("role") == "assistant" for m in recent)
+        
+        return has_assistant_msg and len(state.history) >= 2
 
     def _classify_intent(self, user_message: str) -> Dict[str, Any]:
         """
